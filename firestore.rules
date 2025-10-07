@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+match /databases/{database}/documents {
+
+// Helpers
+function isSignedIn() {
+  return request.auth != null;
+}
+
+// Claims-first checks
+function roleClaim() {
+  return isSignedIn() ? request.auth.token.role : null;
+}
+function isAdminByClaim() {
+  return roleClaim() == "admin";
+}
+function isTeacherByClaim() {
+  return roleClaim() == "teacher";
+}
+
+// Fallback to caller's users/{uid} doc when claims not yet set
+function selfDocRole() {
+  return isSignedIn()
+    ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+    : null;
+}
+function isAdminBySelfDoc() {
+  return selfDocRole() == "admin";
+}
+function isTeacherBySelfDoc() {
+  return selfDocRole() == "teacher";
+}
+
+// Toggle to claims-only later for stronger security by removing the selfDoc parts
+function isAdmin() {
+  return isSignedIn() && (isAdminByClaim() || isAdminBySelfDoc());
+}
+function isTeacher() {
+  return isSignedIn() && (isTeacherByClaim() || isTeacherBySelfDoc());
+}
+
+// USERS
+// - Self: full control of own doc (create/read/update/delete).
+// - Teacher: can create student docs (not own).
+// - Admin: can read all and update status/role for moderation.
+match /users/{uid} {
+  // Self
+  allow create: if isSignedIn() && uid == request.auth.uid;
+  allow read, update, delete: if isSignedIn() && uid == request.auth.uid;
+
+  // Teacher creates student profiles (not their own)
+  allow create: if isTeacher() && uid != request.auth.uid;
+
+  // Admin moderation powers: allow updates (e.g., status, role) on any user
+  allow read, update: if isAdmin();
+  // Admin deletes only if necessary (optional; enable if you want)
+  // allow delete: if isAdmin();
+}
+
+// Roster reads (teachers and admins)
+match /users/{anyUid} {
+  allow read: if isTeacher() || isAdmin();
+  // No client-side updates/deletes to other users here (covered in /users/{uid})
+  allow update, delete: if false;
+}
+
+// STUDENTS (optional mirror)
+// - Teachers and admins can create/read; no client updates/deletes.
+match /students/{sid} {
+  allow read: if isTeacher() || isAdmin();
+  allow create: if isTeacher() || isAdmin();
+  allow update, delete: if false;
+}
+
+// ATTENDANCE
+// - Teachers and admins can create; teachers/admins can read all.
+// - Students can read their own by uid (studentId) or rollNumber match.
+// - No client updates/deletes.
+match /attendance/{aid} {
+  allow create: if (isTeacher() || isAdmin())
+    && request.resource.data.keys().hasAll(["date","status","markedBy","class","section"])
+    && request.resource.data.status in ["Present","Absent"]
+    && request.resource.data.date is string
+    && request.resource.data.class is string
+    && request.resource.data.section is string
+    && (
+         ("studentId" in request.resource.data && request.resource.data.studentId is string)
+         || ("rollNumber" in request.resource.data && request.resource.data.rollNumber is string)
+       );
+
+  allow read: if (isTeacher() || isAdmin())
+    || (
+         isSignedIn()
+         && (
+              (("studentId" in resource.data) && resource.data.studentId == request.auth.uid)
+              || (
+                   ("rollNumber" in resource.data)
+                   && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rollNumber == resource.data.rollNumber
+                 )
+            )
+       );
+
+  allow update, delete: if false;
+}
+
+// ADMIN COLLECTION (optional, if you store admin-only configs)
+match /admin/{doc=**} {
+  allow read, write: if isAdmin();
+}
+
+// DEFAULT DENY
+match /{document=**} {
+  allow read, write: if false;
+}
+}
+}

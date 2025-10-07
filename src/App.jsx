@@ -15,7 +15,7 @@ import AdminLogin from "./pages/Admin/AdminLogin";
 import AdminSignup from "./pages/Admin/AdminSignup";
 import AdminTeacherApprovals from "./pages/Admin/AdminTeacherApprovals";
 import AdminStudentList from "./pages/Admin/AdminStudentList";
-
+import Welcome from "./pages/Welcome";
 
 
 function App() {
@@ -32,6 +32,7 @@ function App() {
         {/* Dashboards */}
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+        <Route path="/" element={<Welcome />} />
 
         {/* Teacher-only pages */}
         <Route path="/attendance" element={<Attendance />} />
@@ -51,7 +52,7 @@ function App() {
             <Route path="/admin/add-student" element={<AdminRoute><AdminAddStudent/></AdminRoute>} /> */}
 
         {/* Default redirect */}
-        <Route path="*" element={<StudentLogin/>} />
+        <Route path="*" element={<Welcome/>} />
       </Routes>
     </Router>
   );

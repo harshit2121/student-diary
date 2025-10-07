@@ -5,7 +5,7 @@ import { getFirestore } from "firebase/firestore";
 
 // Replace these values with your Firebase project's config
 const firebaseConfig = {
-  apiKey: "AIzaSyDWRoV5UY5xD9q9R8cqNRcbRMv0J2luJFE",
+  apiKey: "AIzaSyD-APFVJ--dQV_K-ubX9juhtmlPRTCQflw",
   authDomain: "studentdiary-4c940.firebaseapp.com",
   projectId: "studentdiary-4c940",
   storageBucket: "studentdiary-4c940.firebasestorage.app",
