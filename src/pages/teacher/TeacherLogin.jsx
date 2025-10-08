@@ -148,7 +148,7 @@ export default function TeacherLogin() {
                 whileFocus={{ scale: 1.01 }}
                 type="email"
                 placeholder="name@example.com"
-                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-white placeholder-slate-500 focus:outline-none shadow-inner text-white"
+                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-black placeholder-slate-500 focus:outline-none shadow-inner text-white"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -162,7 +162,7 @@ export default function TeacherLogin() {
                 whileFocus={{ scale: 1.01 }}
                 type="password"
                 placeholder="••••••••"
-                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 focus:outline-none shadow-inner"
+                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-black placeholder-slate-500 focus:outline-none shadow-inner"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

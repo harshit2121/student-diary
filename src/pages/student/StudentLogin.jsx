@@ -147,7 +147,7 @@ export default function StudentLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="w-full px-4 py-3 rounded-xl bg-white/90 text-black placeholder-slate-500 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
                 />
                 <input
                   type="password"
@@ -155,7 +155,7 @@ export default function StudentLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="w-full px-4 py-3 rounded-xl bg-white/90 text-black placeholder-slate-500 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
                 />
                 <motion.button
                   whileHover={{ scale: 1.01 }}
