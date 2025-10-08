@@ -120,9 +120,9 @@ export default function TeacherLogin() {
             <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 shadow-inner" />
             <div>
               <h2 className="text-white text-2xl font-semibold tracking-wide">
-                Teacher Login 🦚
+                Faculty Login 🦚
               </h2>
-              <p className="text-yellow-100/90 text-xs">Welcome back to Student Diary</p>
+              <p className="text-yellow-100/90 text-s text-white">Welcome back to CM RISE ERP</p>
             </div>
           </div>
 
@@ -141,21 +141,21 @@ export default function TeacherLogin() {
               )}
             </AnimatePresence>
 
-            <label className="text-yellow-100/90 text-xs px-2">Email</label>
+            <label className="text-yellow-100/90 text-s px-2 text-white">Email</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2">📧</span>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type="email"
                 placeholder="name@example.com"
-                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 focus:outline-none shadow-inner"
+                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-white placeholder-slate-500 focus:outline-none shadow-inner text-white"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
-            <label className="text-yellow-100/90 text-xs px-2">Password</label>
+            <label className="text-yellow-100/90 text-s px-2 text-white">Password</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2">🔒</span>
               <motion.input
@@ -173,7 +173,7 @@ export default function TeacherLogin() {
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
               disabled={busy}
-              className="relative overflow-hidden bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 hover:from-yellow-300 hover:to-orange-500 text-brown-900 py-3 rounded-xl transition shadow-lg shadow-amber-900/30 disabled:opacity-70"
+              className="relative overflow-hidden bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 hover:from-yellow-300 hover:to-orange-500 text-brown-900 py-3 rounded-xl transition shadow-lg shadow-amber-900/30 disabled:opacity-70"
               type="submit"
             >
               <span className="relative z-10">{busy ? "Authenticating..." : "Login"}</span>
@@ -197,9 +197,8 @@ export default function TeacherLogin() {
               </Link>
             </p>
 
-            <p className="text-[12px] text-yellow-50/80 text-center mt-2">
-              Tip: If roster is blocked after login, teacher permissions may not be in the token yet.
-              An admin can add a teacher role later; signing out and in refreshes access instantly.
+            <p className="text-[12px] text-yellow-50/90 text-center mt-2 text-white"> 
+             Only Use when Authorized, Misuse is prohibited.
             </p>
           </form>
         </motion.div>

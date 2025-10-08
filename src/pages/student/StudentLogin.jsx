@@ -15,12 +15,7 @@ export default function StudentLogin() {
     setError("");
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Store minimal user data for session continuity
-      const user = {
-        uid: cred.user.uid,
-        email: cred.user.email,
-        role: "student",
-      };
+      const user = { uid: cred.user.uid, email: cred.user.email, role: "student" };
       localStorage.setItem("user", JSON.stringify(user));
       navigate("/student-dashboard", { state: { user } });
     } catch (err) {
@@ -48,8 +43,7 @@ export default function StudentLogin() {
         animate={{ opacity: [0.88, 1, 0.88] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         style={{
-          background:
-            "linear-gradient(135deg, #0b1220 0%, #0e1b33 40%, #0a1a3a 100%)",
+          background: "linear-gradient(135deg, #0b1220 0%, #0e1b33 40%, #0a1a3a 100%)",
         }}
       />
       {/* Indigo/blue conic aurora */}
@@ -108,10 +102,7 @@ export default function StudentLogin() {
             className="absolute -inset-[2px] rounded-3xl blur-[12px]"
             animate={{ opacity: [0.5, 0.85, 0.5] }}
             transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(37,99,235,0.9), rgba(59,130,246,0.9), rgba(99,102,241,0.9))",
-            }}
+            style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))" }}
           />
           {/* Card */}
           <div className="relative rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl overflow-hidden">
@@ -130,7 +121,16 @@ export default function StudentLogin() {
             />
             <div className="relative p-7 sm:p-8">
               <div className="mb-6">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 shadow-md mb-3" />
+                {/* LOGO SLOT (replaces colored square) */}
+                <img
+                  src="/cmrise.png"  // place your file at public/logo.png
+                  alt="School Logo"
+                  className="h-10 w-10 rounded-xl object-cover bg-white/10 border border-white/15 mb-3"
+                  onError={(e) => {
+                    // Hide gracefully if logo missing
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
                 <h1 className="text-2xl font-bold">Student Login</h1>
                 <p className="text-sm text-white/80 mt-1">Welcome back to Student Diary</p>
               </div>
