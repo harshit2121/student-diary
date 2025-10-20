@@ -30,7 +30,7 @@ export default function AddStudent() {
       if (!user) {
         setAllowed(false);
         setChecking(false);
-        navigate("/teacher-login");
+        navigate("/teacher");
         return;
       }
       try {
