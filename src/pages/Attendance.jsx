@@ -106,20 +106,21 @@ export default function Attendance() {
     if (!grade || !section) return setInfo("Select a class and section.");
     const teacherName = profile?.name || auth.currentUser?.displayName || "teacher";
     const entries = students
-      .filter((s) => s.rollNumber && marks[s.rollNumber]?.status)
-      .map((s) => ({
-        rollNumber: toStr(s.rollNumber),
-        studentId: toStr(s.id),
-        date,
-        status: marks[s.rollNumber].status,
-        class: toStr(grade),
-        section: toStr(section),
-        note: toStr(marks[s.rollNumber].note || ""),
-        classId: `${toStr(grade)}-${toStr(section)}`,
-        markedByUid: user?.uid || "",
-        markedByName: teacherName,
-        createdAt: new Date(),
-      }));
+  .filter((s) => s.rollNumber && marks[s.rollNumber]?.status)
+  .map((s) => ({
+    rollNumber: toStr(s.rollNumber),
+    studentId: toStr(s.id),
+    date,
+    status: marks[s.rollNumber].status,
+    class: toStr(grade),
+    section: toStr(section),
+    note: toStr(marks[s.rollNumber].note || ""),
+    classId: `${toStr(grade)}-${toStr(section)}`,
+    markedBy: user?.uid || "", // <-- FIXED
+    markedByName: teacherName,
+    createdAt: new Date(),
+  }));
+
     if (entries.length === 0) return setInfo("Mark at least one student.");
 
     setSaving(true);
