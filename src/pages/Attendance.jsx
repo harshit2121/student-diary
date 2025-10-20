@@ -38,9 +38,9 @@ export default function Attendance() {
       try {
         const snap = await getDocs(query(collection(db, "users"), where("uid","==", u.uid)));
         const p = snap.docs[0]?.data() || null;
-        setProfile(p || { name: u.displayName || "Teacher" });
+        setProfile(p || { name: u.displayName || "teacher" });
       } catch {
-        setProfile({ name: u.displayName || "Teacher" });
+        setProfile({ name: u.displayName || "teacher" });
       }
     });
     return () => unsub();
@@ -104,7 +104,7 @@ export default function Attendance() {
 
   const saveAll = async () => {
     if (!grade || !section) return setInfo("Select a class and section.");
-    const teacherName = profile?.name || auth.currentUser?.displayName || "Teacher";
+    const teacherName = profile?.name || auth.currentUser?.displayName || "teacher";
     const entries = students
       .filter((s) => s.rollNumber && marks[s.rollNumber]?.status)
       .map((s) => ({
