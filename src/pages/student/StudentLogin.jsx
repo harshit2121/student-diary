@@ -167,7 +167,7 @@ export default function StudentLogin() {
                 </motion.button>
                 <p className="text-white/90 text-sm text-center">
                   Don’t have an account?{" "}
-                  <Link to="/student-signup" className="underline font-semibold">
+                  <Link to="/StudentSignup" className="underline font-semibold">
                     Signup
                   </Link>
                 </p>

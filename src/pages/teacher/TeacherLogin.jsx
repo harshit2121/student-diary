@@ -13,59 +13,55 @@ export default function TeacherLogin() {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
-  setBusy(true);
-  try {
-    // 1) Sign in
-    const cred = await signInWithEmailAndPassword(auth, email, password);
+    e.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      // Sign in
+      const cred = await signInWithEmailAndPassword(auth, email, password);
 
-    // 2) Refresh token and read claims
-    await cred.user.getIdToken(true);
-    const token = await cred.user.getIdTokenResult();
-    const claimRole = token?.claims?.role;
+      // Claims + profile
+      await cred.user.getIdToken(true);
+      const token = await cred.user.getIdTokenResult();
+      const claimRole = token?.claims?.role;
 
-    // 3) Load profile (authoritative for status and display)
-    const snap = await getDoc(doc(db, "users", cred.user.uid));
-    const profile = snap.exists() ? snap.data() : null;
+      const snap = await getDoc(doc(db, "users", cred.user.uid));
+      const profile = snap.exists() ? snap.data() : null;
 
-    // 4) Must be teacher by claim or profile.role
-    const isTeacher =
-      claimRole === "teacher" || (profile && profile.role === "teacher");
+      const isTeacher = claimRole === "teacher" || profile?.role === "teacher";
+      if (!isTeacher) {
+        setError("Not authorized as a teacher.");
+        return;
+      }
+      const status = profile?.status || "pending";
+      if (status !== "approved") {
+        setError("Approval required. Please wait for admin approval.");
+        return;
+      }
 
-    if (!isTeacher) {
-      setError("Not authorized as a teacher.");
-      return;
+      // Store minimal session info
+      const sessionUser = {
+        uid: cred.user.uid,
+        email: cred.user.email,
+        role: "teacher",
+        name: profile?.name || "",
+        classes: profile?.classes || [],
+        status: "approved",
+      };
+      localStorage.setItem("user", JSON.stringify(sessionUser));
+
+      // NEW: redirect to sidebar dashboard route
+      navigate("/teacher", { replace: true });
+    } catch (err) {
+      setError(err?.message || "Login failed.");
+    } finally {
+      setBusy(false);
     }
+  };
 
-    // 5) Must be approved by admin
-    const status = profile?.status || "pending";
-    if (status !== "approved") {
-      setError("Approval required. Please wait for admin approval.");
-      // Optional: sign out to avoid leaving an authenticated but unapproved session
-      // await auth.signOut();
-      return;
-    }
-
-    // 6) Build safe session object
-    const sessionUser = {
-      uid: cred.user.uid,
-      email: cred.user.email,
-      role: "teacher",
-      ...profile, // includes name/phone/status (already "approved")
-    };
-
-    localStorage.setItem("user", JSON.stringify(sessionUser));
-    navigate("/teacher-dashboard", { state: { user: sessionUser } });
-  } catch (err) {
-    setError(err?.message || "Login failed.");
-  } finally {
-    setBusy(false);
-  }
-};
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Warm sunburst yellow background */}
+      {/* Background */}
       <div
         aria-hidden
         className="absolute inset-0"
@@ -74,7 +70,6 @@ export default function TeacherLogin() {
             "radial-gradient(1000px 600px at 20% 20%, rgba(253,224,71,0.55), transparent 60%), radial-gradient(900px 700px at 80% 30%, rgba(250,204,21,0.45), transparent 60%), linear-gradient(180deg, #fffbe6 0%, #fff3bf 40%, #ffe08a 100%)",
         }}
       />
-      {/* Subtle animated sun rays */}
       <motion.div
         aria-hidden
         className="absolute -inset-1"
@@ -88,7 +83,7 @@ export default function TeacherLogin() {
         }}
       />
 
-      {/* Center card */}
+      {/* Card */}
       <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
         <motion.div
           initial={{ y: 30, opacity: 0 }}
@@ -103,7 +98,6 @@ export default function TeacherLogin() {
             border: "1px solid rgba(255,255,255,0.18)",
           }}
         >
-          {/* Rim glow */}
           <motion.span
             aria-hidden
             className="absolute -inset-[2px] rounded-[26px] blur-[12px]"
@@ -122,7 +116,9 @@ export default function TeacherLogin() {
               <h2 className="text-white text-2xl font-semibold tracking-wide">
                 Faculty Login 🦚
               </h2>
-              <p className="text-yellow-100/90 text-s text-white">Welcome back to CM RISE ERP</p>
+              <p className="text-yellow-100/90 text-sm">
+                Welcome back to CM RISE ERP
+              </p>
             </div>
           </div>
 
@@ -141,28 +137,28 @@ export default function TeacherLogin() {
               )}
             </AnimatePresence>
 
-            <label className="text-yellow-100/90 text-s px-2 text-white">Email</label>
+            <label className="text-yellow-100/90 text-sm px-2">Email</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2">📧</span>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type="email"
                 placeholder="name@example.com"
-                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-black placeholder-slate-500 focus:outline-none shadow-inner text-white"
+                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 focus:outline-none shadow-inner"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
-            <label className="text-yellow-100/90 text-s px-2 text-white">Password</label>
+            <label className="text-yellow-100/90 text-sm px-2">Password</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2">🔒</span>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type="password"
                 placeholder="••••••••"
-                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-black placeholder-slate-500 focus:outline-none shadow-inner"
+                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 focus:outline-none shadow-inner"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -190,15 +186,15 @@ export default function TeacherLogin() {
               />
             </motion.button>
 
-            <p className="text-yellow-50/90 text-sm text-center text-white">
+            <p className="text-yellow-50/90 text-sm text-center">
               Don’t have an account?{" "}
               <Link to="/TeacherSignup" className="underline font-semibold">
                 Signup
               </Link>
             </p>
 
-            <p className="text-[12px] text-yellow-50/90 text-center mt-2 text-white"> 
-             Only Use when Authorized, Misuse is prohibited.
+            <p className="text-[12px] text-yellow-50/90 text-center mt-2">
+              Only Use when Authorized, Misuse is prohibited.
             </p>
           </form>
         </motion.div>
