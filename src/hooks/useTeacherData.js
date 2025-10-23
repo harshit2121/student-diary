@@ -1,8 +1,7 @@
-// src/hooks/useTeacherData.js
 import { useEffect, useMemo, useState } from "react";
 import {
-  collection, doc, getDoc, getDocs, onSnapshot,
-  orderBy, limit, query, where,
+  collection, doc, getDoc, getDocs, onSnapshot, query,
+  orderBy, limit, where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -17,24 +16,29 @@ export function useTeacherData(uid) {
   const [loading, setLoading] = useState(true);
   const [teacher, setTeacher] = useState(null);
   const [classKeys, setClassKeys] = useState([]); // ["10-A", "10-B"]
-  const [classTotals, setClassTotals] = useState({}); // key -> total
+  const [classTotals, setClassTotals] = useState({}); // key -> total students count
   const [todayAgg, setTodayAgg] = useState({}); // key -> {present,total}
   const [weeklyAvg, setWeeklyAvg] = useState(0);
   const [activity, setActivity] = useState([]);
+  const [studentsData, setStudentsData] = useState([]); // new: with attendance percentages
 
   useEffect(() => {
     if (!uid) return;
     let unsub = () => {};
+
     const run = async () => {
       setLoading(true);
+
+      // Fetch teacher profile
       const u = await getDoc(doc(db, "users", uid));
       const profile = u.exists() ? { id: uid, ...u.data() } : null;
       setTeacher(profile);
 
-      // Build class keys from students
+      // Fetch all students and build class keys and totals
       const sSnap = await getDocs(query(collection(db, "users"), where("role", "==", "student")));
       const keys = new Set();
       const totals = {};
+      const allStudents = [];
       sSnap.forEach((d) => {
         const s = d.data();
         const g = String(s.class || "").trim();
@@ -43,12 +47,13 @@ export function useTeacherData(uid) {
         const key = `${g}-${sec}`;
         keys.add(key);
         totals[key] = (totals[key] || 0) + 1;
+        allStudents.push({ id: d.id, name: s.name, class: g, section: sec });
       });
       const k = Array.from(keys).sort();
       setClassKeys(k);
       setClassTotals(totals);
 
-      // Today aggregates
+      // Fetch today's attendance aggregates
       const today = dkey();
       const aggCol = collection(db, "attendance", today, "classes");
       const aggSnap = await getDocs(aggCol);
@@ -58,7 +63,7 @@ export function useTeacherData(uid) {
       });
       setTodayAgg(agg);
 
-      // Weekly average from aggregates
+      // Compute weekly average attendance
       let sum = 0, c = 0;
       for (let i = 0; i < 7; i++) {
         const dt = new Date(); dt.setDate(dt.getDate() - i);
@@ -80,9 +85,46 @@ export function useTeacherData(uid) {
         setActivity(rows);
       });
 
+      // Now calculate individual student attendance percentage over last 7 days
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 7);
+      const attendPromises = allStudents.map(async (student) => {
+        // Query attendance for this student over last 7 days
+        // Assuming attendance collection structure supports student presence record per date
+        const attendQuery = query(
+          collection(db, 'attendance'),
+          where('class', '==', student.class),
+          where('section', '==', student.section),
+          where('date', '>=', cutoffDate),
+          where('studentsPresent', 'array-contains', student.id)
+        );
+        const snapshot = await getDocs(attendQuery);
+        const attendedSessions = snapshot.size;
+
+        // Total sessions for the class-section over last 7 days
+        let totalSessions = 0;
+        for (let i = 0; i < 7; i++) {
+          const dt = new Date();
+          dt.setDate(dt.getDate() - i);
+          const dateKey = dkey(dt);
+          const daySnapshot = await getDoc(doc(db, "attendance", dateKey, "classes", `${student.class}-${student.section}`));
+          if (daySnapshot.exists()) totalSessions++;
+        }
+        const attendancePercent = totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0;
+
+        return {
+          ...student,
+          attendancePercent
+        };
+      });
+
+      const detailedStudents = await Promise.all(attendPromises);
+      setStudentsData(detailedStudents);
+
       setLoading(false);
     };
     run();
+
     return () => unsub();
   }, [uid]);
 
@@ -126,5 +168,5 @@ export function useTeacherData(uid) {
     }));
   }, [activity]);
 
-  return { loading, teacher, kpis, classWise, activity: activityView };
+  return { loading, teacher, kpis, classWise, activity: activityView, studentsData };
 }

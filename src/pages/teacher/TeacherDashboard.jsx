@@ -10,12 +10,26 @@ import {
   TrendingUp,
   Gauge,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Color palette: soft warm yellows and dark text
+const COLORS = {
+  bg: "#fffbea",
+  headerBg: "#fff3c4",
+  borderYellow: "#facc15",
+  textPrimary: "#78350f",
+  cardBg: "#fffbeb",
+  cardBorder: "#fde68a",
+  hoverBg: "#fef3c7",
+};
 
 export default function TeacherDashboard() {
   const [uid, setUid] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUid(u?.uid || null));
+    const unsub = onAuthStateChanged(auth, (user) => setUid(user?.uid ?? null));
     return () => unsub();
   }, []);
 
@@ -23,6 +37,7 @@ export default function TeacherDashboard() {
 
   const handleLogout = async () => {
     await signOut(auth);
+    navigate("/teacher-login");
   };
 
   const cards = [
@@ -39,139 +54,161 @@ export default function TeacherDashboard() {
 
   if (!uid) {
     return (
-      <div className="h-screen flex items-center justify-center text-slate-600">
-        Checking authentication…
-      </div>
+      <CenteredMessage
+        text="Checking authentication…"
+        bgColor={COLORS.bg}
+        textColor={COLORS.textPrimary}
+      />
     );
   }
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center text-slate-500">
-        Loading dashboard...
-      </div>
+      <CenteredMessage
+        text="Loading dashboard..."
+        bgColor={COLORS.bg}
+        textColor={COLORS.textPrimary}
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb] text-slate-900">
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="inline-flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-              <ClipboardList size={18} />
-            </span>
-            <div className="flex flex-col leading-tight">
-              <h1 className="text-base sm:text-lg font-semibold">Dashboard</h1>
-              <p className="text-[11px] sm:text-[12px] text-slate-500">Today's attendance</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="hidden sm:block text-sm text-slate-600">
-              {teacher?.name ? `Hi, ${teacher.name}` : ""}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1 sm:gap-2 rounded-md border border-slate-200 bg-white px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm hover:bg-slate-50 transition"
-            >
-              <LogOut size={14} className="sm:size-16" />
-              Logout
-            </button>
-          </div>
+    <div className="min-h-screen" style={{ backgroundColor: COLORS.bg, color: COLORS.textPrimary }}>
+      {/* Header with CM Rise logo */}
+      <header
+        className="sticky top-0 z-30 flex items-center justify-between px-6 py-4 border-b"
+        style={{ backgroundColor: COLORS.headerBg, borderColor: COLORS.borderYellow }}
+      >
+        <div className="flex items-center gap-4">
+          <img src="/cmrise.png" alt="CM Rise Logo" className="h-14 object-contain" />
+          <h1 className="font-extrabold text-2xl tracking-wider select-none">Student Diary Faculty Dashboard</h1>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="hidden sm:block font-semibold">Hi, {teacher?.name ?? ""}</span>
+          <LogoutButton onClick={handleLogout} bgColor={COLORS.headerBg} hoverColor={COLORS.hoverBg} />
         </div>
       </header>
 
-      {/* Content */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-6 py-5 sm:py-6">
-        {/* KPI row */}
-        <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {cards.map(({ label, value, sub, icon: Icon }) => (
-            <div
-              key={label}
-              className="rounded-xl bg-white border border-slate-200 p-3 sm:p-4 shadow-sm"
+      {/* KPI Cards */}
+      <section className="max-w-7xl mx-auto p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {cards.map(({ label, value, sub, icon: Icon }) => (
+          <motion.div
+            key={label}
+            className="rounded-lg border p-6 flex justify-between items-center shadow-lg cursor-default"
+            style={{ backgroundColor: COLORS.cardBg, borderColor: COLORS.cardBorder }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            whileHover={{ scale: 1.03 }}
+          >
+            <div>
+              <p className="text-sm font-semibold opacity-80">{label}</p>
+              <p className="font-extrabold text-3xl mt-1">{value}</p>
+              <p className="text-xs text-yellow-700 mt-1">{sub}</p>
+            </div>
+            <Icon size={40} className="text-yellow-700 opacity-70" />
+          </motion.div>
+        ))}
+      </section>
+
+      {/* Main Section: Class-wise Attendance and Recent Activity */}
+      <main className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 px-6 pb-10">
+        {/* Class-wise Attendance */}
+        <motion.section
+          className="rounded-lg border p-6 shadow-xl"
+          style={{ backgroundColor: COLORS.cardBg, borderColor: COLORS.cardBorder }}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-extrabold tracking-wide">Class-wise Attendance</h2>
+            <button
+              onClick={() => navigate("/teacher/attendance-report")}
+              className="text-yellow-600 font-semibold underline hover:text-yellow-800"
+              aria-label="View detailed attendance report"
             >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-[12px] sm:text-[13px] text-slate-500">{label}</p>
-                  <p className="mt-1 text-lg sm:text-2xl font-semibold tracking-tight">{value}</p>
-                  <p className="mt-1 text-[11px] sm:text-[12px] text-emerald-600">{sub}</p>
-                </div>
-                <span className="mt-2 sm:mt-0 h-8 w-8 sm:h-9 sm:w-9 inline-grid place-items-center rounded-lg bg-slate-50 text-slate-500 border border-slate-200">
-                  <Icon size={15} />
-                </span>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        {/* Panels */}
-        <section className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Class-wise Attendance */}
-          <div className="rounded-xl bg-white border border-slate-200 p-3 sm:p-4 shadow-sm overflow-x-auto">
-            <h2 className="text-base sm:text-lg font-semibold">Class-wise Attendance</h2>
-            <div className="mt-3 space-y-3 min-w-[320px]">
-              {(classWise ?? []).map((row) => (
-                <div key={row.section} className="flex flex-wrap items-center gap-2 sm:gap-3">
-                  <div className="min-w-[80px] sm:min-w-[120px] text-xs sm:text-sm text-slate-700">{row.section}</div>
-                  <div className="flex-1 min-w-[100px]">
-                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-blue-500"
-                        style={{ width: `${row.pct}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="w-14 sm:w-16 text-right text-[11px] sm:text-xs text-slate-500">
-                    {row.present}/{row.total}
-                  </div>
-                  <span className="inline-flex w-10 sm:w-12 justify-center rounded-md bg-slate-100 text-slate-700 text-[11px] sm:text-xs px-2 py-0.5">
-                    {row.pct}%
-                  </span>
-                </div>
-              ))}
-              {(!classWise || classWise.length === 0) && (
-                <p className="text-xs sm:text-sm text-slate-500">No classes assigned.</p>
-              )}
-            </div>
+              View Detailed Report
+            </button>
           </div>
+          {classWise.length > 0 ? (
+            classWise.map(({ section, present, total, pct }) => (
+              <div key={section} className="mb-4 flex items-center gap-4">
+                <div className="min-w-[110px] font-semibold">{section}</div>
+                <div className="flex-1 bg-yellow-300 rounded-full h-4 overflow-hidden">
+                  <div
+                    className="bg-yellow-600 h-full rounded-full transition-width duration-300 ease-in-out"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="text-yellow-800 font-semibold whitespace-nowrap w-16">{present}/{total}</div>
+                <div className="text-yellow-900 font-semibold bg-yellow-200 rounded px-2 w-14 text-center">{pct}%</div>
+              </div>
+            ))
+          ) : (
+            <p className="text-yellow-700 font-semibold text-center">No classes assigned.</p>
+          )}
+        </motion.section>
 
-          {/* Recent Activity */}
-          <div className="rounded-xl bg-white border border-slate-200 p-3 sm:p-4 shadow-sm">
-            <h2 className="text-base sm:text-lg font-semibold">Recent Activity</h2>
-            <ul className="mt-2 divide-y divide-slate-200">
-              {(activity ?? []).map((a, idx) => (
-                <li
-                  key={idx}
-                  className="py-2 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex items-start gap-2 sm:gap-3">
+        {/* Recent Activity */}
+        <motion.section
+          className="rounded-lg border p-6 shadow-xl"
+          style={{ backgroundColor: COLORS.cardBg, borderColor: COLORS.cardBorder }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+        >
+          <h2 className="text-2xl font-extrabold mb-6 tracking-wide">Recent Activity</h2>
+          <ul className="divide-y divide-yellow-300 max-h-[420px] overflow-auto">
+            {activity.length > 0 ? (
+              activity.map(({ status, cls, time }, i) => (
+                <li key={i} className="flex justify-between items-center py-3">
+                  <div className="flex items-center gap-3">
                     <span
-                      className={`mt-1 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ${
-                        a.status === "absent" ? "bg-rose-500" : "bg-emerald-500"
-                      }`}
+                      className={`h-3 w-3 rounded-full ${status === "absent" ? "bg-red-600" : "bg-green-600"}`}
                     />
                     <div>
-                      <p className="text-xs sm:text-sm">
-                        {a.status === "absent" ? "Student absent" : "Attendance marked"}
+                      <p className="text-yellow-900 font-medium text-sm">
+                        {status === "absent" ? "Student absent" : "Attendance marked"}
                       </p>
-                      <p className="text-[10px] sm:text-xs text-slate-500">{a.cls}</p>
+                      <p className="text-yellow-800 text-xs opacity-80">{cls}</p>
                     </div>
                   </div>
-                  <span className="mt-1 sm:mt-0 text-[10px] sm:text-xs text-slate-500">
-                    {a.time}
-                  </span>
+                  <span className="text-yellow-800 opacity-80 text-xs">{time}</span>
                 </li>
-              ))}
-              {(!activity || activity.length === 0) && (
-                <li className="py-2 sm:py-3 text-xs sm:text-sm text-slate-500">
-                  No recent activity.
-                </li>
-              )}
-            </ul>
-          </div>
-        </section>
+              ))
+            ) : (
+              <p className="text-yellow-700 font-semibold text-center py-6">No recent activity.</p>
+            )}
+          </ul>
+        </motion.section>
       </main>
     </div>
+  );
+}
+
+function CenteredMessage({ text, bgColor, textColor }) {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center font-semibold text-lg"
+      style={{ backgroundColor: bgColor, color: textColor }}
+    >
+      {text}
+    </div>
+  );
+}
+
+function LogoutButton({ onClick, bgColor, hoverColor }) {
+  return (
+    <button
+      onClick={onClick}
+      className="rounded-md px-3 py-1 font-semibold shadow transition"
+      style={{ backgroundColor: bgColor, color: "#78350f" }}
+      onMouseEnter={e => e.currentTarget.style.backgroundColor = hoverColor}
+      onMouseLeave={e => e.currentTarget.style.backgroundColor = bgColor}
+    >
+      <LogOut className="inline-block mr-1" size={18} />
+      Logout
+    </button>
   );
 }

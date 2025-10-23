@@ -180,7 +180,7 @@ useEffect(() => {
         actorName: teacherName,
         createdAt: new Date(),
       });
-      setInfo(`Saved ${entries.length} records; aggregate updated.`);
+      setInfo(`Attendance ${entries.length} records; aggregate updated.`);
     } catch (e) {
       setInfo(e?.message || "Save failed.");
     } finally {

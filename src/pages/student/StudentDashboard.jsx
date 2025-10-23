@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { auth, db } from "../../firebase";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const COLORS = {
-  page: "#0c1222",
-  primary: "#2563eb",
-  primaryAlt: "#1d4ed8",
-  indigo: "#6366f1",
-  textOnDark: "#e6eefc",
+  bg: "#ecf2fe",
+  accent: "#2563eb",
+  accentAlt: "#60a5fa",
+  textDark: "#1e293b",
+  card: "#fff",
+  pills: "#e0e7ff",
 };
 
 export default function StudentDashboard() {
@@ -19,16 +20,29 @@ export default function StudentDashboard() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [loadingAtt, setLoadingAtt] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const run = async () => {
-      const user = auth.currentUser;
-      if (!user) return navigate("/student-login");
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (snap.exists()) setProfile(snap.data());
-    };
-    run();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        navigate("/StudentLogin");
+      } else {
+        try {
+          const snap = await getDoc(doc(db, "users", user.uid));
+          if (snap.exists()) setProfile(snap.data());
+          else {
+            await signOut(auth);
+            navigate("/StudentLogin");
+          }
+        } catch {
+          await signOut(auth);
+          navigate("/StudentLogin");
+        }
+      }
+      setAuthChecked(true);
+    });
+    return unsubscribe;
   }, [navigate]);
 
   const fetchAttendance = async () => {
@@ -38,18 +52,22 @@ export default function StudentDashboard() {
       const attRef = collection(db, "attendance");
       const q = query(attRef, where("rollNumber", "==", String(profile.rollNumber)));
       const qs = await getDocs(q);
-      const list = qs.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const filtered = list.filter((r) => {
+      let list = qs.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list = list.filter((r) => {
         const dt = new Date(r.date);
         return (!fromDate || dt >= new Date(fromDate)) && (!toDate || dt <= new Date(toDate));
       });
-      // Sort newest first
-      filtered.sort((a, b) => (a.date < b.date ? 1 : -1));
-      setAttendance(filtered);
+      list.sort((a, b) => (a.date < b.date ? 1 : -1));
+      setAttendance(list);
     } finally {
       setLoadingAtt(false);
     }
   };
+
+  useEffect(() => {
+    if (profile) fetchAttendance();
+    // eslint-disable-next-line
+  }, [profile]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -60,212 +78,218 @@ export default function StudentDashboard() {
   const present = attendance.filter((a) => a.status === "Present").length;
   const percent = total ? Math.round((present / total) * 100) : 0;
 
-  // decorative dots
-  const dots = useMemo(
+  // Animated background bubbles
+  const bubbles = useMemo(
     () =>
-      Array.from({ length: 24 }).map((_, i) => ({
+      Array.from({ length: 18 }).map((_, i) => ({
         id: i,
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
-        size: 2 + Math.floor(Math.random() * 2),
-        opacity: 0.08 + Math.random() * 0.07,
+        size: 12 + Math.random() * 18,
+        x: `${Math.random() * 96 + 2}%`,
+        delay: Math.random() * 3,
+        duration: 6 + Math.random() * 3,
+        opacity: 0.10 + Math.random() * 0.06,
       })),
     []
   );
 
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-blue-700">
+        <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }}>
+          Checking authentication…
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: COLORS.page }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ background: COLORS.bg }}>
+      {/* Animated floating bubbles */}
       <div className="pointer-events-none absolute inset-0">
-        {dots.map((d) => (
-          <span
-            key={d.id}
-            className="absolute rounded-full bg-white"
-            style={{ top: d.top, left: d.left, width: d.size, height: d.size, opacity: d.opacity }}
+        {bubbles.map(b => (
+          <motion.div
+            key={b.id}
+            className="absolute rounded-full bg-blue-200 blur"
+            style={{
+              width: b.size,
+              height: b.size,
+              left: b.x,
+              opacity: b.opacity,
+              bottom: 0
+            }}
+            initial={{ y: 0, opacity: 0 }}
+            animate={{ y: [-10, -420], opacity: [0, b.opacity, 0] }}
+            transition={{ delay: b.delay, duration: b.duration, repeat: Infinity, ease: "easeInOut" }}
           />
         ))}
       </div>
 
-      {/* App bar */}
-      <div className="relative z-10 mx-auto max-w-6xl px-4 pt-5">
-        <div className="flex items-center justify-between rounded-xl px-4 py-3 bg-[#0f1830] border border-white/10 shadow-lg">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Logo"
-              className="h-9 w-9 rounded-md bg-white/10 border border-white/20 object-cover"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-            <div>
-              <p className="text-[11px] tracking-widest" style={{ color: "rgba(230,238,252,0.7)" }}>
-                School of Excellance • JHABUA
-              </p>
-              <h1 className="font-semibold" style={{ color: COLORS.textOnDark }}>
-                Student Diary — Dashboard
-              </h1>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Pill label="Attendance" value={`${percent}%`} />
-            <Pill label="Total Days" value={attendance.length} />
-            <button
-              onClick={handleLogout}
-              className="ml-2 rounded-md px-3 py-1.5 border border-white/15"
-              style={{ color: COLORS.textOnDark, backgroundColor: "rgba(255,255,255,0.06)" }}
-            >
-              Logout
-            </button>
+      {/* App Bar */}
+      <motion.header
+        className="relative z-10 max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between p-4 mt-3 bg-white/95 rounded-2xl shadow-lg"
+        initial={{ y: -24, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        <div className="flex items-center gap-4 w-full md:w-auto mb-3 md:mb-0">
+          <img src="/cmrise.png" alt="Logo" className="h-10 w-10 rounded bg-blue-50 object-cover shadow" />
+          <div>
+            <p className="text-xs uppercase tracking-wider text-blue-500 font-bold">
+              School of Excellence • JHABUA
+            </p>
+            <h1 className="text-2xl font-bold text-blue-900 mt-0.5">Student Dashboard</h1>
           </div>
         </div>
-      </div>
+        <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+          <Pill label="Attendance" value={`${percent}%`} />
+          <Pill label="Total Days" value={total} />
+          <motion.button
+            whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/notices/students")}
+            className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold shadow"
+          >
+            Notices
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.96 }}
+            onClick={handleLogout}
+            className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-500 text-blue-900 font-semibold shadow"
+          >
+            Logout
+          </motion.button>
+        </div>
+      </motion.header>
 
       {/* Content */}
-      <div className="relative z-10 mx-auto max-w-6xl px-4 pb-10 pt-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Profile card */}
-        <Surface className="lg:col-span-2">
-          {profile ? (
+      <main className="relative z-10 max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6 p-6 mt-3">
+        {/* Profile and attendance summary */}
+        <motion.section
+          className="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6 flex flex-col items-center justify-center"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          {profile &&
             <>
-              <div className="flex items-center gap-4">
-                <img
-                  src={`https://ui-avatars.com/api/?background=1e293b&color=fff&name=${encodeURIComponent(
-                    profile.name || "Student"
-                  )}`}
-                  alt="profile"
-                  className="w-16 h-16 rounded-lg border border-slate-700"
-                />
-                <div className="min-w-0">
-                  <h2 className="font-semibold text-slate-900">{profile.name}</h2>
-                  <p className="text-slate-600 text-sm">
-                    Class: {profile.class} • Section: {profile.section}
-                  </p>
-                  <p className="text-slate-500 text-xs">
-                    Roll: {profile.rollNumber} • {profile.phone}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 grid place-items-center">
+              <motion.img
+                src={`https://ui-avatars.com/api/?background=2563eb&color=fff&name=${encodeURIComponent(profile.name || "Student")}`}
+                alt="profile"
+                className="w-24 h-24 rounded-2xl border-4 border-blue-400 shadow"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              />
+              <h2 className="text-2xl font-bold text-blue-800 mt-3">{profile.name}</h2>
+              <p className="text-blue-500 mb-1 mt-0.5">
+                Class: <span className="font-semibold">{profile.class}</span> •
+                Section: <span className="font-semibold">{profile.section}</span>
+              </p>
+              <p className="text-blue-400 text-xs mb-2">
+                Roll: {profile.rollNumber} • {profile.phone}
+              </p>
+              <motion.div className="my-6" initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.4 }}>
                 <Donut percent={percent} />
-                <p className="mt-2 text-slate-500 text-xs">Attendance this period</p>
-              </div>
+              </motion.div>
+              <div className="text-blue-700 text-xs font-semibold">Current Attendance Rate</div>
             </>
-          ) : (
-            <p className="text-slate-600">Loading profile…</p>
-          )}
-        </Surface>
+          }
+          {!profile && <div className="text-blue-500">Loading profile…</div>}
+        </motion.section>
 
-        {/* Attendance */}
-        <Surface className="lg:col-span-3">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-900 font-semibold">Attendance Records</h3>
-            <div className="flex items-center gap-2 text-xs text-slate-600">
+        {/* Attendance history panel */}
+        <motion.section
+          className="lg:col-span-3 bg-white rounded-2xl shadow-xl p-6"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-blue-800 text-lg font-bold">Attendance History</h3>
+            <div className="flex items-center gap-2 text-xs text-blue-600">
               <span>Present</span>
-              <div className="h-2 w-14 rounded-full bg-green-500" />
+              <div className="h-2 w-10 rounded-full bg-green-500" />
               <span>Absent</span>
-              <div className="h-2 w-14 rounded-full bg-red-500" />
+              <div className="h-2 w-10 rounded-full bg-red-500" />
             </div>
           </div>
-
-          {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+          {/* Date filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
             <InputDate value={fromDate} onChange={setFromDate} />
             <InputDate value={toDate} onChange={setToDate} />
             <motion.button
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
               onClick={fetchAttendance}
-              className="rounded-md text-white px-4 py-2 shadow-md"
-              style={{ background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.primaryAlt})` }}
+              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.03 }}
+              className="rounded-lg bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold px-4 py-2 shadow"
             >
-              View Attendance
+              Filter by Date
             </motion.button>
           </div>
-
-          {/* Summary */}
-          <div className="flex items-center gap-3 mb-5">
+          {/* Badges */}
+          <div className="flex gap-3 mb-4">
             <Badge tone="green" label="Present" value={present} />
             <Badge tone="red" label="Absent" value={total - present} />
             <Badge tone="indigo" label="Percent" value={`${percent}%`} />
           </div>
-
-          {/* List */}
-          <div className="space-y-2">
+          {/* Attendance history list */}
+          <div className="space-y-2 max-h-80 overflow-y-auto">
             <AnimatePresence initial={false}>
               {loadingAtt ? (
                 <Fade>Loading attendance…</Fade>
               ) : attendance.length === 0 ? (
                 <Fade>No records found</Fade>
               ) : (
-                attendance.map((a, i) => {
-                  const teacherRaw = a.markedByName || a.markedBy || "Teacher";
-                  const teacherName =
-                    teacherRaw && teacherRaw.length > 18 && !teacherRaw.includes(" ")
-                      ? "Teacher"
-                      : teacherRaw;
-                  return (
-                    <motion.div
-                      key={`${a.id || a.date}-${i}`}
-                      initial={{ y: 8, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      className="p-3 rounded-md border bg-white text-slate-900 flex justify-between items-center"
-                      style={{ borderColor: "#e5e7eb" }}
+                attendance.map((a, i) => (
+                  <motion.div
+                    key={a.id || i}
+                    className="flex justify-between items-center p-3 rounded-lg border bg-blue-50 text-blue-900 font-medium shadow-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.25, delay: i * 0.04 }}
+                  >
+                    <span>{a.date}</span>
+                    <span
+                      className={`px-3 py-1 rounded text-xs font-bold ${
+                        a.status === "Present" ? "bg-green-600 text-white" : "bg-red-500 text-white"
+                      }`}
                     >
-                      <span>{a.date}</span>
-                      <span
-                        className={`px-2 py-1 rounded text-white text-xs ${
-                          a.status === "Present" ? "bg-green-600" : "bg-rose-500"
-                        }`}
-                      >
-                        {a.status} • {teacherName}
-                      </span>
-                    </motion.div>
-                  );
-                })
+                      {a.status} • {a.markedByName || a.markedBy || "Teacher"}
+                    </span>
+                  </motion.div>
+                ))
               )}
             </AnimatePresence>
           </div>
-        </Surface>
-      </div>
+        </motion.section>
+      </main>
     </div>
   );
 }
 
-/* ——— UI pieces ——— */
-
-function Surface({ children, className = "" }) {
-  return (
-    <div
-      className={`rounded-xl p-6 border shadow-lg ${className}`}
-      style={{ backgroundColor: "#ffffff", borderColor: "#e5e7eb" }}
-    >
-      {children}
-    </div>
-  );
-}
+/* ------------------- UI Components ------------------- */
 
 function Pill({ label, value }) {
   return (
-    <div className="flex items-center gap-2 rounded-full px-3 py-1.5 bg-white/10 border border-white/15">
-      <span className="text-[12px]" style={{ color: COLORS.textOnDark }}>{label}</span>
-      <span className="text-[12px] font-semibold" style={{ color: COLORS.textOnDark }}>{value}</span>
+    <div className="flex items-center gap-2 px-3 py-1 rounded-xl shadow text-blue-800 font-bold bg-blue-100 border border-blue-200">
+      <span>{label}</span>
+      <span>{value}</span>
     </div>
   );
 }
 
 function Badge({ tone, label, value }) {
   const toneMap = {
-    blue: "bg-blue-600",
+    blue: "bg-blue-500",
     rose: "bg-rose-500",
     indigo: "bg-indigo-600",
     red: "bg-red-600",
     green: "bg-green-600",
   };
   return (
-    <div className="flex items-center gap-2 rounded-full px-3 py-1.5 bg-slate-100 text-slate-900 border" style={{ borderColor: "#e5e7eb" }}>
-      <span className={`inline-block h-2.5 w-2.5 rounded-full ${toneMap[tone]}`} />
-      <span className="opacity-80">{label}</span>
-      <span className="font-semibold">{value}</span>
-    </div>
+    <span className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-white font-semibold ${toneMap[tone]}`}>
+      {label} <span>{value}</span>
+    </span>
   );
 }
 
@@ -274,37 +298,45 @@ function InputDate({ value, onChange }) {
     <input
       type="date"
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="border rounded-md p-2 bg-white text-slate-900 w-full"
-      style={{ borderColor: "#e5e7eb" }}
+      onChange={e => onChange(e.target.value)}
+      className="p-2 bg-blue-50 border border-blue-300 rounded-lg text-blue-900 w-full"
     />
   );
 }
 
 function Fade({ children }) {
-  return <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-slate-600">{children}</motion.div>;
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-blue-500 py-3 text-center">
+      {children}
+    </motion.div>
+  );
 }
 
 function Donut({ percent }) {
   return (
-    <div className="relative">
-      <svg width="140" height="140" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r="48" stroke="#e5e7eb" strokeWidth="10" fill="none" />
+    <div className="relative" style={{ width: 130, height: 130 }}>
+      <svg width={130} height={130} viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="50" stroke="#e0e7ff" strokeWidth="11" fill="none" />
         <motion.circle
-          cx="60" cy="60" r="48"
-          stroke="url(#g)"
-          strokeWidth="10" fill="none" strokeLinecap="round"
-          initial={{ pathLength: 0 }} animate={{ pathLength: percent / 100 }}
-          transition={{ duration: 0.9, ease: "easeInOut" }}
+          cx="60"
+          cy="60"
+          r="50"
+          stroke="url(#grad)"
+          strokeWidth="11"
+          fill="none"
+          strokeLinecap="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: percent / 100 }}
+          transition={{ duration: 1.0, ease: "easeInOut" }}
         />
         <defs>
-          <linearGradient id="g" x1="0" x2="1">
-            <stop offset="0%" stopColor={COLORS.primary} />
-            <stop offset="100%" stopColor={COLORS.indigo} />
+          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#2563eb" />
+            <stop offset="100%" stopColor="#4f46e5" />
           </linearGradient>
         </defs>
       </svg>
-      <div className="absolute inset-0 grid place-items-center text-xl font-bold text-slate-800">
+      <div className="absolute inset-0 flex items-center justify-center text-blue-800 font-extrabold text-3xl select-none">
         {percent}%
       </div>
     </div>

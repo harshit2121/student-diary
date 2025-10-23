@@ -35,9 +35,9 @@ export default function AdminStudentList() {
       actions={
         <>
           <input value={cls} onChange={(e)=>setCls(e.target.value)} placeholder="Class"
-                 className="px-3 py-2 rounded-lg bg-white/85 text-slate-900 mr-2" />
+                 className="px-3 py-2 rounded-lg bg-white/85 text-black-900 mr-2" />
           <input value={sec} onChange={(e)=>setSec(e.target.value)} placeholder="Section"
-                 className="px-3 py-2 rounded-lg bg-white/85 text-slate-900 mr-2" />
+                 className="px-3 py-2 rounded-lg bg-white/85 text-black-900 mr-2" />
           <button onClick={load} className="px-4 py-2 rounded-xl bg-white/15 border border-white/30">
             {loading ? "Loading…" : "Load"}
           </button>

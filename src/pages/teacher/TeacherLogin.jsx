@@ -5,12 +5,14 @@ import { doc, getDoc } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
+
 export default function TeacherLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -31,11 +33,13 @@ export default function TeacherLogin() {
       const isTeacher = claimRole === "teacher" || profile?.role === "teacher";
       if (!isTeacher) {
         setError("Not authorized as a teacher.");
+        setBusy(false);
         return;
       }
       const status = profile?.status || "pending";
       if (status !== "approved") {
         setError("Approval required. Please wait for admin approval.");
+        setBusy(false);
         return;
       }
 
@@ -59,106 +63,93 @@ export default function TeacherLogin() {
     }
   };
 
+
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* Background */}
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(1000px 600px at 20% 20%, rgba(253,224,71,0.55), transparent 60%), radial-gradient(900px 700px at 80% 30%, rgba(250,204,21,0.45), transparent 60%), linear-gradient(180deg, #fffbe6 0%, #fff3bf 40%, #ffe08a 100%)",
-        }}
-      />
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-yellow-50 via-yellow-100 to-yellow-50">
+      {/* Background glows */}
       <motion.div
         aria-hidden
-        className="absolute -inset-1"
+        className="absolute inset-0"
         initial={{ opacity: 0.3 }}
-        animate={{ opacity: [0.25, 0.45, 0.25] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ opacity: [0.25, 0.45, 0.25] }}f
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         style={{
           background:
-            "conic-gradient(from 140deg at 30% 20%, rgba(250,204,21,0.25), rgba(217,119,6,0.18), rgba(250,204,21,0.25))",
-          filter: "blur(60px)",
+            "conic-gradient(from 140deg at 20% 30%, rgba(250,204,21,0.25), rgba(217,119,6,0.15), rgba(250,204,21,0.25))",
+          filter: "blur(80px)",
         }}
       />
 
-      {/* Card */}
+      {/* Central card */}
       <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
+          initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative w-full max-w-md rounded-3xl p-7 sm:p-9"
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="relative w-full max-w-md rounded-3xl p-8 bg-yellow-100/90 shadow-lg"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(120,53,15,0.90) 0%, rgba(88,28,7,0.92) 100%)",
-            boxShadow:
-              "0 20px 50px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.18)",
+            border: "1px solid rgba(252, 186, 3, 0.5)",
+            boxShadow: "0 20px 50px rgba(250, 204, 21, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
           }}
         >
+          {/* Glow animation behind */}
           <motion.span
             aria-hidden
-            className="absolute -inset-[2px] rounded-[26px] blur-[12px]"
-            animate={{ opacity: [0.45, 0.75, 0.45] }}
+            className="absolute -inset-[3px] rounded-3xl blur-xl"
+            animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
             style={{
               background:
-                "linear-gradient(135deg, rgba(250,204,21,0.85), rgba(217,119,6,0.85), rgba(161,98,7,0.85))",
+                "linear-gradient(135deg, rgba(250,204,21,0.75), rgba(217,119,6,0.75), rgba(161,98,7,0.75))",
               zIndex: -1,
             }}
           />
 
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-yellow-300 via-amber-400 to-orange-500 shadow-inner" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-14 w-14 bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 rounded-lg shadow-inner" />
             <div>
-              <h2 className="text-white text-2xl font-semibold tracking-wide">
-                Faculty Login 🦚
+              <h2 className="text-yellow-900 text-3xl font-extrabold tracking-wide select-none">
+                Faculty Login
               </h2>
-              <p className="text-yellow-100/90 text-sm">
-                Welcome back to CM RISE ERP
-              </p>
+              <p className="text-yellow-700 text-sm">Welcome back to CM RISE ERP</p>
             </div>
           </div>
 
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          <form onSubmit={handleLogin} className="flex flex-col gap-5">
             <AnimatePresence>
               {error && (
                 <motion.p
-                  key="err"
-                  initial={{ y: -8, opacity: 0 }}
+                  key="error"
+                  initial={{ y: -10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -8, opacity: 0 }}
-                  className="text-rose-200 text-center text-sm"
+                  exit={{ y: -10, opacity: 0 }}
+                  className="px-3 py-2 rounded bg-red-300 text-red-900 text-center font-semibold"
                 >
                   {error}
                 </motion.p>
               )}
             </AnimatePresence>
 
-            <label className="text-yellow-100/90 text-sm px-2">Email</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2">📧</span>
+            <div>
+              <label className="block text-yellow-800 font-semibold mb-2">Email</label>
               <motion.input
-                whileFocus={{ scale: 1.01 }}
+                whileFocus={{ scale: 1.03 }}
                 type="email"
                 placeholder="name@example.com"
-                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 focus:outline-none shadow-inner"
+                className="w-full p-3 rounded-xl border border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-300 shadow-inner text-yellow-900"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
 
-            <label className="text-yellow-100/90 text-sm px-2">Password</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2">🔒</span>
+            <div>
+              <label className="block text-yellow-800 font-semibold mb-2">Password</label>
               <motion.input
-                whileFocus={{ scale: 1.01 }}
+                whileFocus={{ scale: 1.03 }}
                 type="password"
                 placeholder="••••••••"
-                className="w-full pl-10 p-3 rounded-xl bg-white/90 text-slate-900 placeholder-slate-500 focus:outline-none shadow-inner"
+                className="w-full p-3 rounded-xl border border-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-300 shadow-inner text-yellow-900"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -166,34 +157,23 @@ export default function TeacherLogin() {
             </div>
 
             <motion.button
-              whileHover={{ scale: 1.01 }}
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               disabled={busy}
-              className="relative overflow-hidden bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 hover:from-yellow-300 hover:to-orange-500 text-brown-900 py-3 rounded-xl transition shadow-lg shadow-amber-900/30 disabled:opacity-70"
               type="submit"
+              className="relative w-full py-3 rounded-xl font-bold text-yellow-900 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 shadow-lg hover:from-yellow-300 hover:to-orange-500 transition disabled:opacity-50"
             >
-              <span className="relative z-10">{busy ? "Authenticating..." : "Login"}</span>
-              <motion.span
-                aria-hidden
-                className="absolute inset-0 rounded-xl"
-                initial={{ x: "-120%" }}
-                animate={{ x: ["-120%", "120%"] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
-                style={{
-                  background:
-                    "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%)",
-                }}
-              />
+              {busy ? "Authenticating..." : "Login"}
             </motion.button>
 
-            <p className="text-yellow-50/90 text-sm text-center">
+            <p className="text-yellow-700/80 text-center text-sm">
               Don’t have an account?{" "}
-              <Link to="/TeacherSignup" className="underline font-semibold">
+              <Link to="/TeacherSignup" className="underline font-semibold hover:text-yellow-800">
                 Signup
               </Link>
             </p>
 
-            <p className="text-[12px] text-yellow-50/90 text-center mt-2">
+            <p className="text-yellow-700/70 text-center text-xs mt-2">
               Only Use when Authorized, Misuse is prohibited.
             </p>
           </form>
